@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Hub</title>
+    <meta name="description" content="Track, filter, and share the latest Google Cloud BigQuery release notes and updates.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar or Header Panel -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-area">
+                    <div class="bq-logo-icon">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z" fill="currentColor"/>
+                            <path d="M7 10H9V17H7V10ZM11 7H13V17H11V7ZM15 13H17V17H15V13Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>BigQuery <span>Release Hub</span></h1>
+                        <span class="sub-badge">Live Feed Tracker</span>
+                    </div>
+                </div>
+                
+                <div class="theme-and-actions">
+                    <button id="themeToggleBtn" class="action-btn-circle" title="Toggle theme" aria-label="Toggle theme">
+                        <!-- Moon Icon (for light theme to switch to dark) -->
+                        <svg class="icon moon-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <!-- Sun Icon (for dark theme to switch to light) -->
+                        <svg class="icon sun-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                    
+                    <button id="refreshBtn" class="primary-btn refresh-btn">
+                        <svg class="icon refresh-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                        </svg>
+                        <span>Sync Feed</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <span class="stat-num" id="totalUpdatesCount">0</span>
+                    <span class="stat-label">Total Changes</span>
+                </div>
+                <div class="stat-card border-left">
+                    <span class="stat-num text-feature" id="featuresCount">0</span>
+                    <span class="stat-label">Features</span>
+                </div>
+                <div class="stat-card border-left">
+                    <span class="stat-num text-issue" id="issuesCount">0</span>
+                    <span class="stat-label">Issues/Fixes</span>
+                </div>
+                <div class="stat-card border-left">
+                    <span class="stat-num text-announcement" id="announcementsCount">0</span>
+                    <span class="stat-label">Announcements</span>
+                </div>
+                <div class="stat-card border-left last-sync-wrapper">
+                    <span class="stat-value" id="lastSyncTime">Never</span>
+                    <span class="stat-label">Last Checked</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="app-main">
+            <!-- Sidebar Controls -->
+            <aside class="controls-panel">
+                <div class="panel-section">
+                    <h3>Search updates</h3>
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search keywords..." aria-label="Search updates">
+                        <button id="clearSearchBtn" class="clear-search-btn" title="Clear search" style="display: none;">&times;</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Filter by category</h3>
+                    <div class="category-filters" id="categoryFilters">
+                        <button class="filter-chip active" data-category="all">
+                            <span>All Changes</span>
+                            <span class="chip-count" id="countAll">0</span>
+                        </button>
+                        <button class="filter-chip" data-category="feature">
+                            <span class="bullet bullet-feature"></span>
+                            <span>Features</span>
+                            <span class="chip-count" id="countFeature">0</span>
+                        </button>
+                        <button class="filter-chip" data-category="issue">
+                            <span class="bullet bullet-issue"></span>
+                            <span>Issues</span>
+                            <span class="chip-count" id="countIssue">0</span>
+                        </button>
+                        <button class="filter-chip" data-category="announcement">
+                            <span class="bullet bullet-announcement"></span>
+                            <span>Announcements</span>
+                            <span class="chip-count" id="countAnnouncement">0</span>
+                        </button>
+                        <button class="filter-chip" data-category="other">
+                            <span class="bullet bullet-other"></span>
+                            <span>Others</span>
+                            <span class="chip-count" id="countOther">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Target Domain</h3>
+                    <div class="category-filters" id="domainFilters">
+                        <button class="filter-chip active" data-domain="all">
+                            <span>All Domains</span>
+                            <span class="chip-count" id="countDomainAll">0</span>
+                        </button>
+                        <button class="filter-chip" data-domain="Data Engineer">
+                            <span>Data Engineer</span>
+                            <span class="chip-count" id="countDomainDE">0</span>
+                        </button>
+                        <button class="filter-chip" data-domain="Data Analyst">
+                            <span>Data Analyst</span>
+                            <span class="chip-count" id="countDomainDA">0</span>
+                        </button>
+                        <button class="filter-chip" data-domain="Software Engineer">
+                            <span>Software Engineer</span>
+                            <span class="chip-count" id="countDomainSE">0</span>
+                        </button>
+                        <button class="filter-chip" data-domain="Cloud Engineer">
+                            <span>Cloud Engineer</span>
+                            <span class="chip-count" id="countDomainCE">0</span>
+                        </button>
+                        <button class="filter-chip" data-domain="General Technical">
+                            <span>General Technical</span>
+                            <span class="chip-count" id="countDomainGT">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section selection-status-box" id="selectionStatusBox">
+                    <h3>Selection Mode</h3>
+                    <p class="status-desc">Select cards in the feed to compile a custom multi-update digest to tweet or copy.</p>
+                    <div class="selection-actions-sidebar">
+                        <button id="clearSelectionBtn" class="secondary-btn btn-sm w-full" disabled>Clear Selection</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Feed Content -->
+            <section class="feed-panel">
+                <div class="feed-header">
+                    <h2>Release Feed</h2>
+                    <div class="feed-view-controls">
+                        <button id="selectAllVisibleBtn" class="text-link-btn">Select all visible</button>
+                    </div>
+                </div>
+
+                <!-- Error Notification -->
+                <div id="errorAlert" class="alert alert-error" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span id="errorMessage">An error occurred while fetching the release notes.</span>
+                    <button class="alert-close-btn" onclick="document.getElementById('errorAlert').style.display='none'">&times;</button>
+                </div>
+
+                <!-- Loading Skeleton -->
+                <div id="feedSkeleton" class="feed-skeleton">
+                    <div class="skeleton-date-group">
+                        <div class="skeleton-date-header"></div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-line short"></div>
+                            <div class="skeleton-line long"></div>
+                            <div class="skeleton-line medium"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-line short"></div>
+                            <div class="skeleton-line long"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-date-group">
+                        <div class="skeleton-date-header"></div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-line short"></div>
+                            <div class="skeleton-line long"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                    </div>
+                    <h3>No matching updates found</h3>
+                    <p>Try clearing your search query or adjusting your filters.</p>
+                    <button id="resetFiltersBtn" class="primary-btn btn-sm">Reset Filters</button>
+                </div>
+
+                <!-- Actual Feed Cards Container -->
+                <div id="feedContainer" class="feed-container" style="display: none;">
+                    <!-- Rendered dynamically -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Floating Multi-Tweet Drawer (Bottom Bar) -->
+        <div id="tweetDrawer" class="tweet-drawer">
+            <div class="drawer-header">
+                <div class="drawer-title-area">
+                    <span class="selection-badge" id="selectedCountBadge">0 selected</span>
+                    <h3>Draft Tweet</h3>
+                </div>
+                <button id="closeDrawerBtn" class="drawer-close" aria-label="Minimize drawer">&times;</button>
+            </div>
+            
+            <div class="drawer-body">
+                <div class="tweet-composer-area">
+                    <textarea id="tweetTextarea" placeholder="Draft your tweet here... select some updates to prefill." rows="4" maxlength="500"></textarea>
+                    
+                    <div class="composer-meta">
+                        <div class="character-count-wrapper">
+                            <span id="charCount">0</span>/<span id="charLimit">280</span>
+                            <span id="charWarning" class="char-warning-msg" style="display: none;">Exceeds X standard limit (280)</span>
+                        </div>
+                        <button id="regenerateTweetBtn" class="text-link-btn" title="Refresh draft based on current selections">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                            </svg>
+                            <span>Regenerate draft</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="drawer-actions">
+                    <div class="tweet-templates">
+                        <span class="template-label">Style:</span>
+                        <button class="template-btn active" data-style="digest">Digest</button>
+                        <button class="template-btn" data-style="bullet">Bulleted</button>
+                        <button class="template-btn" data-style="simple">Headline</button>
+                    </div>
+                    
+                    <div class="action-buttons-group">
+                        <button id="copyTweetBtn" class="secondary-btn">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Copy Text</span>
+                        </button>
+                        <button id="submitTweetBtn" class="primary-btn tweet-btn-color">
+                            <!-- X Icon (Twitter) -->
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span>Tweet on X</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast notifications -->
+        <div id="toastNotification" class="toast-notification">
+            <span id="toastMessage">Copied to clipboard!</span>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
